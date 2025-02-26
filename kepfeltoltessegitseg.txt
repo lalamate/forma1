@@ -1,0 +1,109 @@
+npm init -y
+npm install mysql
+npm install express
+npm install cors
+npm install --save multer
+npm install body-parser
+npm install nodemon
+
+
+package.json fájlban módosítás
+    "test": "echo \"Error: no test specified\" && exit 1",
+"start":"nodemon backend.js"
+
+szerver indítása: npm start
+
+backend.js
+-----------------------------------------------------------------------
+const express = require('express')
+var multer = require('multer');
+var cors = require('cors')
+const mysql = require('mysql')
+const app = express()
+const port = 3000
+
+app.use(cors())
+app.use(express.json());
+app.use(express.static('kepek'));
+
+//kép feltöltése
+const storage = multer.diskStorage({
+  destination(req, file, callback) {
+    callback(null, './kepek');
+  },
+  filename(req, file, callback) {
+    //callback(null, `${file.originalname}`);
+    callback(null, `${file.fieldname}_${Date.now()}_${file.originalname}`);
+  },
+});
+
+const upload = multer({ storage });
+
+app.post('/upload', upload.array('photo', 3), (req, res) => {
+  const uploadedFileName = req.files[0].filename; // Ez a feltöltött fájl neve
+  console.log('file', req.files);
+  console.log('body', req.body);
+
+  res.status(200).json({
+    message: 'success!',
+    fileName: uploadedFileName // Adjuk hozzá a válaszhoz a fájl nevét
+  });
+});
+
+app.get('/', (req, res) => {
+  res.send('Hello World!')
+  console.log('Hello Borsos Lajos!')
+})
+var connection;
+function kapcsolat()
+{
+   connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'adatbazisnev'
+  })
+  
+  connection.connect()
+}
+
+
+-----------------------------------------------------------------------
+
+alap.js
+
+function kepfeltoltes() {
+    var input = document.querySelector('input[type="file"]')
+    var data = new FormData()
+    data.append('photo', input.files[0])
+    data.append('user', '')
+
+    fetch("http://localhost:3000/upload", {
+        method: "POST",
+        body: data
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById("kepfeltoltesstatus").innerHTML = input.files[0].name + " Képfeltöltés sikerült!";
+        document.getElementById('kepnev').value = data.fileName; // Állítsd be a fájl nevét a kepnev mezőben
+    })
+    .catch(error => console.error('Error:', error));
+     
+    document.getElementById('kepfeltoltesstatus').innerHTML = "";
+
+}
+------------------------------------------------------------------------------
+index.html
+
+       <div class="mb-3">
+            <h2>Könyv képe:</h2>
+            <p>
+              <label>Válassz egy fájlt a feltöltéshez (Előtte nevezd át a képet!!!)</label>
+              <input type="file" name="myfile" /><br /><br />
+              <!--<input type="submit" value="Kép feltöltése" name="submit" onclick="kepfeltoltes()">-->
+              <button type="button" onclick="kepfeltoltes()">Kép feltölt</button>
+              <span class="uzenet" id="kepfeltoltesstatus"></span>
+            </p>
+            <label for="kepnev" class="form-label">Fénykép a könyvről</label>
+            <input type="url" class="form-control" id="kepnev" placeholder="10.jpg" disabled>
+          </div>
